@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include <string.h>
 
-typedef enum AtomType
+typedef enum TokenType
 {
     ERROR = 0,
     IDENTIFIER,
@@ -11,9 +11,9 @@ typedef enum AtomType
     ASSIGNMENT,
     WHILE,
     EOS
-} AtomType;
+} TokenType;
 
-char *atomTypesNames[] = {
+char *tokenTypesNames[] = {
     "LEXICAL ERROR",
     "IDENTIFIER",
     "INTEGER NUMBER",
@@ -21,14 +21,14 @@ char *atomTypesNames[] = {
     "WHILE",
     "END OF STRING"};
 
-typedef struct Atom
+typedef struct Token
 {
-    AtomType type;
+    TokenType type;
     int line;
     int attribute_for_number;
     char attribute_for_identifier[15];
 
-} Atom;
+} Token;
 
 int is_numeric_character(char c)
 {
@@ -73,33 +73,33 @@ char *read_file(const char *file_name)
     return buffer;
 }
 
-void process_identifier(char **buffer, Atom *atom)
+void process_identifier(char **buffer, Token *token)
 {
-    char *start_of_identifier = *buffer;
+    char *buffer_start = *buffer;
 
     while (is_alpha_character(**buffer) || is_numeric_character(**buffer))
     {
         *buffer += 1;
     }
 
-    strncpy(atom->attribute_for_identifier, start_of_identifier, *buffer - start_of_identifier);
+    strncpy(token->attribute_for_identifier, buffer_start, *buffer - buffer_start);
 
-    atom->attribute_for_identifier[*buffer - start_of_identifier] = 0;
+    token->attribute_for_identifier[*buffer - buffer_start] = 0;
 
-    if (strcasecmp(atom->attribute_for_identifier, "WHILE") == 0)
+    if (strcasecmp(token->attribute_for_identifier, "WHILE") == 0)
     {
 
-        atom->type = WHILE;
+        token->type = WHILE;
     }
     else
     {
-        atom->type = IDENTIFIER;
+        token->type = IDENTIFIER;
     }
 }
 
-void process_number(char **buffer, Atom *atom)
+void process_number(char **buffer, Token *token)
 {
-    char *start_of_number = *buffer;
+    char *number_start = *buffer;
 
     while (is_numeric_character(**buffer))
     {
@@ -111,19 +111,20 @@ void process_number(char **buffer, Atom *atom)
         return;
     }
 
-    strncpy(atom->attribute_for_identifier, start_of_number, *buffer - start_of_number);
-    atom->attribute_for_identifier[*buffer - start_of_number] = 0;
-    atom->attribute_for_number = atoi(atom->attribute_for_identifier);
-    atom->type = INTEGER_NUMBER;
+    strncpy(token->attribute_for_identifier, number_start, *buffer - number_start);
+    token->attribute_for_identifier[*buffer - number_start] = 0;
+    token->attribute_for_number = atoi(token->attribute_for_identifier);
+    token->type = INTEGER_NUMBER;
 }
 
-Atom *get_atom(char **buffer, int* current_line)
+Token *get_token(char **buffer, int *current_line)
 {
-    Atom *atom = (Atom *)malloc(sizeof(Atom));
+    Token *token = (Token *)malloc(sizeof(Token));
 
     while (**buffer == '\n' || **buffer == '\r' || **buffer == '\t' || **buffer == ' ')
     {
-        if(**buffer == '\n'){
+        if (**buffer == '\n')
+        {
             *current_line += 1;
         }
 
@@ -133,57 +134,61 @@ Atom *get_atom(char **buffer, int* current_line)
     if (**buffer == ':' && *(*buffer + 1) == '=')
     {
         *buffer += 2;
-        atom->type = ASSIGNMENT;
+        token->type = ASSIGNMENT;
     }
     else if (is_numeric_character(**buffer))
     {
-        process_number(buffer, atom);
+        process_number(buffer, token);
     }
     else if (is_alpha_character(**buffer))
     {
-        process_identifier(buffer, atom);
+        process_identifier(buffer, token);
     }
     else if (**buffer == 0)
     {
-        atom->type = EOS;
+        token->type = EOS;
     }
     else
     {
-        atom->type = ERROR;
+        token->type = ERROR;
     }
 
-    return atom;
+    return token;
 }
 
 int main(void)
 {
 
     char *buffer = read_file("code.pas");
-    int *current_line = (int*)malloc(sizeof(int));
+    int *current_line = (int *)malloc(sizeof(int));
 
     *current_line = 1;
 
+    printf("Tokenization starting...\n");
+
     while (1)
     {
-        Atom *current_atom = get_atom(&buffer, current_line);
+        Token *current_token = get_token(&buffer, current_line);
 
-        printf("LINE %d | %s\t|", *current_line, atomTypesNames[current_atom->type]);
+        printf("LINE %d | %s\t|", *current_line, tokenTypesNames[current_token->type]);
 
-        if (current_atom->type == INTEGER_NUMBER)
+        if (current_token->type == INTEGER_NUMBER)
         {
-            printf(" %d ", current_atom->attribute_for_number);
+            printf(" %d ", current_token->attribute_for_number);
         }
-        else if (current_atom->type == IDENTIFIER)
+        else if (current_token->type == IDENTIFIER)
         {
-            printf(" %s ", current_atom->attribute_for_identifier);
+            printf(" %s ", current_token->attribute_for_identifier);
         }
-        else if (current_atom->type == EOS || current_atom->type == ERROR)
+        else if (current_token->type == EOS || current_token->type == ERROR)
         {
             printf("\n");
             break;
         }
         printf("\n");
     }
+
+    printf("Tokenization ending...\n");
 
     return 0;
 }
