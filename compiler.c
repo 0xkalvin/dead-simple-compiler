@@ -1,129 +1,123 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 
-typedef enum AtomType
+#include "definitions.h"
+#include "file_parser.h"
+#include "helpers.h"
+
+void process_identifier(char **buffer, Token *token)
 {
-    ERROR = 0,
-    IDENTIFIER,
-    INTEGER_NUMBER,
-    ASSIGNMENT,
-    WHILE,
-    EOS
-} AtomType;
+    char *buffer_start = *buffer;
 
-char *atomTypesNames[] = {
-    "LEXICAL ERROR",
-    "IDENTIFIER",
-    "INTEGER NUMBER",
-    "ASSIGNMENT",
-    "WHILE",
-    "END OF STRING"};
-
-typedef struct Atom
-{
-    AtomType type;
-    int line;
-    int attribute_for_number;
-    char attribute_for_identifier[15];
-
-} Atom;
-
-int is_numeric_character(char c)
-{
-    if (c >= 48 && c <= 57)
-    {
-        return 1;
-    }
-    return 0;
-}
-
-int is_alpha_character(char c)
-{
-    if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122))
-    {
-        return 1;
-    }
-    return 0;
-}
-
-char *read_file(const char *file_name)
-{
-    FILE *raw_file = fopen(file_name, "r");
-
-    if (!raw_file)
-    {
-        printf("Failed to open file\n");
-        exit(1);
-    }
-
-    fseek(raw_file, 0, SEEK_END); // shift to the end of the stream
-
-    long size = ftell(raw_file); // tell current position of stream
-
-    fseek(raw_file, 0, SEEK_SET); // shift to the beginning of the stream
-
-    char *buffer = (char *)calloc(size + 1, sizeof(char));
-
-    fread(buffer, sizeof(char), size, raw_file);
-
-    fclose(raw_file);
-
-    return buffer;
-}
-
-void process_identifier(char **buffer, Atom *atom)
-{
-    char *start_of_identifier = *buffer;
-
-    while (is_alpha_character(**buffer) || is_numeric_character(**buffer))
+    while (is_alpha_character(**buffer) || is_numeric_character(**buffer) || is_underscore(**buffer))
     {
         *buffer += 1;
     }
 
-    strncpy(atom->attribute_for_identifier, start_of_identifier, *buffer - start_of_identifier);
-
-    atom->attribute_for_identifier[*buffer - start_of_identifier] = 0;
-
-    if (strcasecmp(atom->attribute_for_identifier, "WHILE") == 0)
+    if (*buffer - buffer_start > 16)
     {
+        token->type = ERROR;
+        return;
+    }
 
-        atom->type = WHILE;
-    }
-    else
+    strncpy(token->attribute_for_identifier, buffer_start, *buffer - buffer_start);
+
+    token->attribute_for_identifier[*buffer - buffer_start] = 0;
+
+    for (int i = 0; i < TOTAL_NUMBER_OF_TOKENS - 1; i++)
     {
-        atom->type = IDENTIFIER;
+        if (strcasecmp(token->attribute_for_identifier, tokenTypesNames[i]) == 0)
+        {
+            token->type = i;
+            return;
+        }
     }
+
+    token->type = IDENTIFIER;
 }
 
-void process_number(char **buffer, Atom *atom)
+void process_number(char **buffer, Token *token)
 {
-    char *start_of_number = *buffer;
+    char *number_start = *buffer;
 
     while (is_numeric_character(**buffer))
     {
         *buffer += 1;
     }
 
-    if (**buffer != '\n' && **buffer != '\r' && **buffer != '\t' && **buffer != ' ' && **buffer != 0)
+    if (**buffer == '.')
     {
-        return;
-    }
+        *buffer += 1;
 
-    strncpy(atom->attribute_for_identifier, start_of_number, *buffer - start_of_number);
-    atom->attribute_for_identifier[*buffer - start_of_number] = 0;
-    atom->attribute_for_number = atoi(atom->attribute_for_identifier);
-    atom->type = INTEGER_NUMBER;
+        while (is_numeric_character(**buffer))
+        {
+            *buffer += 1;
+        }
+
+        if (**buffer != '\n' && **buffer != '\r' && **buffer != '\t' && **buffer != ' ' && **buffer != 0)
+        {
+            token->type = ERROR;
+            return;
+        }
+
+        strncpy(token->attribute_for_identifier, number_start, *buffer - number_start);
+        token->attribute_for_identifier[*buffer - number_start] = 0;
+        token->attribute_for_number = atof(token->attribute_for_identifier);
+        token->type = REAL_NUMBER;
+    }
+    else
+    {
+        if (**buffer != '\n' && **buffer != '\r' && **buffer != '\t' && **buffer != ' ' && **buffer != 0)
+        {
+            token->type = ERROR;
+            return;
+        }
+
+        strncpy(token->attribute_for_identifier, number_start, *buffer - number_start);
+        token->attribute_for_identifier[*buffer - number_start] = 0;
+        token->attribute_for_number = atoi(token->attribute_for_identifier);
+        token->type = INTEGER_NUMBER;
+    }
 }
 
-Atom *get_atom(char **buffer, int* current_line)
+void process_comments(char **buffer, Token *token)
 {
-    Atom *atom = (Atom *)malloc(sizeof(Atom));
+
+    if (**buffer == '{')
+    {
+        while (**buffer != '}' && **buffer != 0)
+        {
+            *buffer += 1;
+        }
+
+        if (**buffer == 0)
+        {
+            token->type = ERROR;
+            return;
+        }
+
+        *buffer += 1;
+    }
+    else
+    {
+        while (**buffer != '\n' && **buffer != 0)
+        {
+            *buffer += 1;
+        }
+        *buffer += 1;
+    }
+
+    token->type = COMMENT;
+}
+
+Token *get_token(char **buffer, int *current_line)
+{
+    Token *token = (Token *)malloc(sizeof(Token));
 
     while (**buffer == '\n' || **buffer == '\r' || **buffer == '\t' || **buffer == ' ')
     {
-        if(**buffer == '\n'){
+        if (**buffer == '\n')
+        {
             *current_line += 1;
         }
 
@@ -133,57 +127,152 @@ Atom *get_atom(char **buffer, int* current_line)
     if (**buffer == ':' && *(*buffer + 1) == '=')
     {
         *buffer += 2;
-        atom->type = ASSIGNMENT;
+        token->type = ASSIGNMENT;
+    }
+    else if (**buffer == '(')
+    {
+        *buffer += 1;
+        token->type = PARENTHESIS_START;
+    }
+    else if (**buffer == ')')
+    {
+        *buffer += 1;
+        token->type = PARENTHESIS_END;
+    }
+    else if (**buffer == '.')
+    {
+        *buffer += 1;
+        token->type = DOT;
+    }
+    else if (**buffer == ';')
+    {
+        *buffer += 1;
+        token->type = SEMICOLON;
+    }
+    else if (**buffer == '-')
+    {
+        *buffer += 1;
+        token->type = SUBTRACTION;
+    }
+    else if (**buffer == '+')
+    {
+        *buffer += 1;
+        token->type = ADDITION;
+    }
+    else if (**buffer == '/')
+    {
+        *buffer += 1;
+        token->type = DIVISION;
+    }
+    else if (**buffer == '*')
+    {
+        *buffer += 1;
+        token->type = MULTIPLICATION;
+    }
+    else if (**buffer == '<' && *(*buffer + 1) == '=')
+    {
+        *buffer += 1;
+        token->type = EQUAL_OR_LESS_THAN;
+    }
+    else if (**buffer == '>' && *(*buffer + 1) == '=')
+    {
+        *buffer += 1;
+        token->type = EQUAL_OR_GREATER_THAN;
+    }
+    else if (**buffer == '!' && *(*buffer + 1) == '=')
+    {
+        *buffer += 1;
+        token->type = DIFFERENT;
+    }
+    else if (**buffer == '<')
+    {
+        *buffer += 1;
+        token->type = LESS_THAN;
+    }
+    else if (**buffer == '>')
+    {
+        *buffer += 1;
+        token->type = GREATER_THAN;
+    }
+    else if (**buffer == '=')
+    {
+        *buffer += 1;
+        token->type = EQUAL;
     }
     else if (is_numeric_character(**buffer))
     {
-        process_number(buffer, atom);
+        process_number(buffer, token);
     }
     else if (is_alpha_character(**buffer))
     {
-        process_identifier(buffer, atom);
+        process_identifier(buffer, token);
+    }
+    else if (**buffer == '{' || **buffer == '#')
+    {
+        process_comments(buffer, token);
     }
     else if (**buffer == 0)
     {
-        atom->type = EOS;
+        token->type = EOS;
+    }
+    else if (**buffer == 39 && is_ascii_character(*(*buffer + 1)) && *(*buffer + 2) == 39)
+    {
+        token->type = ASCII_CHARACTER;
+        token->attribute_for_number = (int)*(*buffer + 1);
+        *buffer += 3;
     }
     else
     {
-        atom->type = ERROR;
+        printf("PASSOU AQUI %c %d \n", **buffer, **buffer);
+
+        token->type = ERROR;
     }
 
-    return atom;
+    return token;
 }
 
 int main(void)
 {
 
     char *buffer = read_file("code.pas");
-    int *current_line = (int*)malloc(sizeof(int));
+    int *current_line = (int *)malloc(sizeof(int));
 
     *current_line = 1;
 
+    printf("Tokenization starting...\n");
+
     while (1)
     {
-        Atom *current_atom = get_atom(&buffer, current_line);
+        Token *current_token = get_token(&buffer, current_line);
 
-        printf("LINE %d | %s\t|", *current_line, atomTypesNames[current_atom->type]);
+        printf("LINE %d | %s\t|", *current_line, tokenTypesNames[current_token->type]);
 
-        if (current_atom->type == INTEGER_NUMBER)
+        if (current_token->type == INTEGER_NUMBER)
         {
-            printf(" %d ", current_atom->attribute_for_number);
+            printf(" %d ", current_token->attribute_for_number);
         }
-        else if (current_atom->type == IDENTIFIER)
+        else if (current_token->type == IDENTIFIER)
         {
-            printf(" %s ", current_atom->attribute_for_identifier);
+            printf(" %s ", current_token->attribute_for_identifier);
         }
-        else if (current_atom->type == EOS || current_atom->type == ERROR)
+        else if (current_token->type == ASCII_CHARACTER)
+        {
+            printf(" %c ", current_token->attribute_for_number);
+        }
+        else if (current_token->type == COMMENT)
+        {
+            *current_line += 1;
+        }
+        else if (current_token->type == EOS || current_token->type == ERROR)
         {
             printf("\n");
             break;
         }
         printf("\n");
     }
+
+    printf("Tokenization ending...\n");
+    free(current_line);
 
     return 0;
 }
