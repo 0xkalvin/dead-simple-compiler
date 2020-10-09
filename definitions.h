@@ -11,7 +11,45 @@ typedef enum TokenType
     INTEGER_NUMBER,
     ASSIGNMENT,
     WHILE,
-    EOS
+    EOS,
+    AND,
+    BEGIN,
+    BOOLEAN,
+    CHAR,
+    DO,
+    ELSE,
+    END,
+    FALSE,
+    IF,
+    INTEGER,
+    MOD,
+    NOT,
+    OR,
+    PROGRAM,
+    READ,
+    REAL,
+    THEN,
+    TRUE,
+    WRITE,
+    PARENTHESIS_START,
+    PARENTHESIS_END,
+    DOT,
+    SEMICOLON,
+    ADDITION,
+    SUBTRACTION,
+    DIVISION,
+    MULTIPLICATION,
+    LESS_THAN,
+    EQUAL_OR_LESS_THAN,
+    EQUAL,
+    DIFFERENT,
+    GREATER_THAN,
+    EQUAL_OR_GREATER_THAN,
+    REAL_NUMBER,
+    ASCII_CHARACTER,
+    COMMENT,
+
+    TOTAL_NUMBER_OF_TOKENS
 } TokenType;
 
 const char *tokenTypesNames[] = {
@@ -20,7 +58,43 @@ const char *tokenTypesNames[] = {
     "INTEGER NUMBER",
     "ASSIGNMENT",
     "WHILE",
-    "END OF STRING"};
+    "END OF STRING",
+    "AND",
+    "BEGIN",
+    "BOOLEAN",
+    "CHAR",
+    "DO",
+    "ELSE",
+    "END",
+    "FALSE",
+    "IF",
+    "INTEGER",
+    "MOD",
+    "NOT",
+    "OR",
+    "PROGRAM",
+    "READ",
+    "REAL",
+    "THEN",
+    "TRUE",
+    "WRITE",
+    "PARENTHESIS_START",
+    "PARENTHESIS_END",
+    "DOT",
+    "SEMICOLON",
+    "ADDITION",
+    "SUBTRACTION",
+    "DIVISION",
+    "MULTIPLICATION",
+    "LESS_THAN",
+    "EQUAL_OR_LESS_THAN",
+    "EQUAL",
+    "DIFFERENT",
+    "GREATER_THAN",
+    "EQUAL_OR_GREATER_THAN",
+    "REAL_NUMBER",
+    "ASCII_CHARACTER",
+    "COMMENT"};
 
 typedef struct Token
 {
@@ -28,7 +102,6 @@ typedef struct Token
     int line;
     int attribute_for_number;
     char attribute_for_identifier[15];
-
 } Token;
 
 #endif

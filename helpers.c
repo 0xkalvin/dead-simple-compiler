@@ -17,3 +17,15 @@ int is_alpha_character(char c)
     }
     return 0;
 }
+
+int is_underscore(char c){
+    return c == 95;
+}
+
+int is_ascii_character(char c){
+        if (c >= 0 && c <= 127)
+    {
+        return 1;
+    }
+    return 0;
+}
