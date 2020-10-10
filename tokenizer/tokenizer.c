@@ -45,9 +45,14 @@ void process_number(char **buffer, Token *token)
         *buffer += 1;
     }
 
-    if (**buffer == '.')
+    if (**buffer == '.' && (*(*buffer + 1) == 'e' || *(*buffer + 1) == 'E'))
     {
-        *buffer += 1;
+        *buffer += 3;
+
+        if (**buffer == '+' || **buffer == '-')
+        {
+            *buffer += 1;
+        }
 
         while (is_numeric_character(**buffer))
         {
@@ -223,7 +228,6 @@ Token *get_token(char **buffer, int *current_line)
     }
     else
     {
-        printf("PASSOU AQUI %c %d \n", **buffer, **buffer);
 
         token->type = ERROR;
     }

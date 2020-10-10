@@ -5,7 +5,7 @@ default: all
 
 COMPILER=gcc
 PATTERN=*.c
-BINARY=dsc
+BINARY=tokenizer
 FLAGS=-Wall
 
 build:
