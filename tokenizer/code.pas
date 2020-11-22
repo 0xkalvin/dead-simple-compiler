@@ -1,22 +1,29 @@
-test_pascal
+program exemplo;
 
-1 2 a bc :=
-10 var let
+integer num, maior, cont, qtd;
 
-PrOGrAM AND
+begin
 
-ELSE .
+read(qtd);
 
-DO CHAR ; >=
+cont:=0;
 
-:= THEN OR TRUE = <=
+maior := 0; 
 
-END '&' 1.e987
+while ( cont < qtd ) do
 
-# TESTANDO
+begin
 
-wHilE * 1
+read(num);
 
-1.e+99
+if( num > maior ) then
 
-10.e-97
+maior := num;
+
+cont := cont + 1
+
+end;
+
+write(maior)
+
+end.

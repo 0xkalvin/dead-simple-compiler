@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef enum TokenType
+typedef enum AtomType
 {
     ERROR = 0,
     IDENTIFIER,
@@ -48,9 +48,10 @@ typedef enum TokenType
     REAL_NUMBER,
     ASCII_CHARACTER,
     COMMENT,
-
+    COLON,
+    COMPOSED_COMMAND,
     TOTAL_NUMBER_OF_TOKENS
-} TokenType;
+} AtomType;
 
 const char *tokenTypesNames[] = {
     "LEXICAL ERROR",
@@ -94,14 +95,16 @@ const char *tokenTypesNames[] = {
     "EQUAL_OR_GREATER_THAN",
     "REAL_NUMBER",
     "ASCII_CHARACTER",
-    "COMMENT"};
+    "COMMENT",
+    "COLON",
+    "COMPOSED_COMMAND"};
 
-typedef struct Token
+typedef struct Atom
 {
-    TokenType type;
+    AtomType type;
     int line;
     int attribute_for_number;
     char attribute_for_identifier[15];
-} Token;
+} Atom;
 
 #endif
